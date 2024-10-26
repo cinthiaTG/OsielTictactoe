@@ -1,0 +1,129 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Tic-Tac-Toe</title>
+    <link rel="stylesheet" href="Tablero.css">
+</head>
+<body>
+    <h1>Tic-Tac-Toe</h1>
+    <div id="game-board">
+        <div class="cell" data-cell></div>
+        <div class="cell" data-cell></div>
+        <div class="cell" data-cell></div>
+        <div class="cell" data-cell></div>
+        <div class="cell" data-cell></div>
+        <div class="cell" data-cell></div>
+        <div class="cell" data-cell></div>
+        <div class="cell" data-cell></div>
+        <div class="cell" data-cell></div>
+    </div>
+    <div id="game-status">
+        <p id="status-text">Es tu turno</p>
+        <button id="restart-btn">Reiniciar</button>
+    </div>
+    
+    <section id="leaderboard">
+        <h2>Mejores tiempos</h2>
+        <ul id="high-scores"></ul>
+        <button id="clear-scores-btn">Limpiar Puntajes</button> 
+    </section>
+
+    <script>
+        const cells = document.querySelectorAll("[data-cell]");
+const statusText = document.getElementById("status-text");
+const restartBtn = document.getElementById("restart-btn");
+const highScoresList = document.getElementById("high-scores");
+const clearScoresBtn = document.getElementById("clear-scores-btn");
+
+let playerTurn = true;
+let board = Array(9).fill(null);
+let gameStartTime;
+let bestTimes = JSON.parse(localStorage.getItem("bestTimes")) || [];
+
+function updateHighScores() {
+    highScoresList.innerHTML = "";
+    bestTimes.forEach((record, index) => {
+        const li = document.createElement("li");
+        li.textContent = `${index + 1}. ${record.name} - ${record.time} segundos (${new Date(record.date).toLocaleString()})`;
+        highScoresList.appendChild(li);
+    });
+}
+
+function saveBestTime(time) {
+    const name = prompt("¡Ganaste! Ingresa tu nombre:");
+    const newRecord = { name, time, date: new Date() };
+    bestTimes.push(newRecord);
+    bestTimes.sort((a, b) => a.time - b.time);
+    bestTimes = bestTimes.slice(0, 10);
+    localStorage.setItem("bestTimes", JSON.stringify(bestTimes));
+    updateHighScores();
+}
+
+function checkWinner(player) {
+    const winConditions = [
+        [0, 1, 2], [3, 4, 5], [6, 7, 8], 
+        [0, 3, 6], [1, 4, 7], [2, 5, 8], 
+        [0, 4, 8], [2, 4, 6]
+    ];
+
+    return winConditions.some(condition => {
+        return condition.every(index => board[index] === player);
+    });
+}
+
+function computerMove() {
+    const emptyCells = board.map((val, index) => val === null ? index : null).filter(val => val !== null);
+    const randomIndex = emptyCells[Math.floor(Math.random() * emptyCells.length)];
+    board[randomIndex] = "O";
+    cells[randomIndex].textContent = "O";
+    if (checkWinner("O")) {
+        statusText.textContent = "La computadora ganó";
+        return;
+    }
+    playerTurn = true;
+    statusText.textContent = "Es tu turno";
+}
+
+cells.forEach((cell, index) => {
+    cell.addEventListener("click", () => {
+        if (board[index] || !playerTurn) return;
+
+        board[index] = "X";
+        cell.textContent = "X";
+        if (checkWinner("X")) {
+            const gameTime = Math.round((new Date() - gameStartTime) / 1000);
+            statusText.textContent = `Ganaste en ${gameTime} segundos`;
+            saveBestTime(gameTime);
+            return;
+        }
+
+        playerTurn = false;
+        statusText.textContent = "Es turno de la computadora";
+        setTimeout(computerMove, 500);
+    });
+});
+
+restartBtn.addEventListener("click", () => {
+    board.fill(null);
+    cells.forEach(cell => (cell.textContent = ""));
+    playerTurn = true;
+    statusText.textContent = "Es tu turno";
+    gameStartTime = new Date();
+});
+
+updateHighScores();
+gameStartTime = new Date();
+
+clearScoresBtn.addEventListener("click", () => {
+        if (confirm("¿Estás seguro de que quieres limpiar todos los puntajes?")) {
+            localStorage.removeItem("bestTimes");
+            bestTimes = [];
+            updateHighScores();
+        }
+    });
+
+    </script>
+</body>
+</html>
